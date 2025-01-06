@@ -163,6 +163,29 @@ Update a product by ID. This endpoint requires the user to be authenticated. The
 - `price`: a float64 containing the new price of the product.
 If you need more information about the request and response of each endpoint, please check the corresponding function in the handlers folder.
 
+# OpenAPI swagger
+- run command for get tools:
+> go install github.com/swaggo/swag/cmd/swag@latest
+- Verify Installation
+> swag --version
+- Add description for your api:
+```go
+// @Summary Get a user
+// @Description Get details of a user by ID
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} User
+// @Failure 404 {object} HTTPError
+// @Router /users/{id} [get]
+func getUser(c *fiber.Ctx) error {
+    // Handler implementation
+}
+```
+- re-init swagger when changed your code:
+> swag init
+- reload in web browser: `http://localhost:3000/swagger/index.html`
 # License 📜
 
 [MIT](https://choosealicense.com/licenses/mit/)

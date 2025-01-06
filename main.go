@@ -5,10 +5,12 @@ import (
 	"os"
 
 	"github.com/NikSchaefer/go-fiber/database"
+	_ "github.com/NikSchaefer/go-fiber/docs"
 	"github.com/NikSchaefer/go-fiber/router"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
 )
 
@@ -21,12 +23,18 @@ func getenv(key, fallback string) string {
 }
 
 func main() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+		return
+	}
 	app := fiber.New()
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*", // comma string format e.g. "localhost, nikschaefer.tech"
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
+	// Register Swagger route
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	database.ConnectDB()
 

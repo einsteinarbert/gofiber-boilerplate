@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"log"
 	"time"
 
 	"github.com/NikSchaefer/go-fiber/database"
@@ -16,28 +18,42 @@ type User model.User
 type Session model.Session
 type Product model.Product
 
+//----------------DTOs------------------------
+
+// LoginRequest for /login
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func GetUser(sessionid guuid.UUID) (User, error) {
 	db := database.DB
 	query := Session{Sessionid: sessionid}
 	found := Session{}
 	err := db.First(&found, &query).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return User{}, err
 	}
 	user := User{}
 	usrQuery := User{ID: found.UserRefer}
 	err = db.First(&user, &usrQuery).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return User{}, err
 	}
 	return user, nil
 }
 
+// Login
+// @Summary Login api
+// @Description login by uname & passwd
+// @Tags security-apis
+// @Accept json
+// @Produce json
+// @Param loginRequest body LoginRequest true "Login Credentials"
+// @Success 200
+// @Failure 404 {object} error
+// @Router /login [post]
 func Login(c *fiber.Ctx) error {
-	type LoginRequest struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
 	db := database.DB
 	json := new(LoginRequest)
 	if err := c.BodyParser(json); err != nil {
@@ -126,7 +142,7 @@ func CreateUser(c *fiber.Ctx) error {
 			"message": "Invalid Email Address",
 		})
 	}
-	new := User{
+	userNew := User{
 		Username: json.Username,
 		Password: password,
 		Email:    json.Email,
@@ -141,8 +157,8 @@ func CreateUser(c *fiber.Ctx) error {
 			"message": "User already exists",
 		})
 	}
-	db.Create(&new)
-	session := Session{UserRefer: new.ID, Sessionid: guuid.New()}
+	db.Create(&userNew)
+	session := Session{UserRefer: userNew.ID, Sessionid: guuid.New()}
 	err = db.Create(&session).Error
 	if err != nil {
 		return c.JSON(fiber.Map{
@@ -187,8 +203,16 @@ func DeleteUser(c *fiber.Ctx) error {
 			"message": "Invalid Password",
 		})
 	}
-	db.Model(&user).Association("Sessions").Delete()
-	db.Model(&user).Association("Products").Delete()
+	err := db.Model(&user).Association("Sessions").Delete()
+	if err != nil {
+		log.Fatalf("Delete User Error: %v", err)
+		return err
+	}
+	err = db.Model(&user).Association("Products").Delete()
+	if err != nil {
+		log.Fatalf("Association Product Error: %v", err)
+		return err
+	}
 	db.Delete(&user)
 	c.ClearCookie("sessionid")
 	return c.JSON(fiber.Map{
@@ -235,7 +259,7 @@ func comparePasswords(hashedPwd string, plainPwd []byte) bool {
 	return err == nil
 }
 
-// Universal date the Session Will Expire
+// SessionExpires Universal date the Session Will Expire
 func SessionExpires() time.Time {
 	return time.Now().Add(5 * 24 * time.Hour)
 }
