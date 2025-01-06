@@ -2,3 +2,5 @@
 .docker_build/
 *.exe
 /data
+postgresql/pg-data
+.idea

@@ -20,7 +20,11 @@ go mod tidy
 3. Connect the database: Create a `.env` file and put in a connection string
 
 ```bash
-DATABASE_URL="host=localhost port=5432 user=postgres password=password dbname=postgres sslmode=disable"
+DATABASE_URL="host=0.0.0.0 port=5432 user=postgres password=password dbname=postgres sslmode=disable"
+# optional: using docker-compose for postgresql:
+cd postgresql/
+docker-compose up -d
+cd ..
 ```
 
 4. Start the project
